@@ -1,48 +1,56 @@
-import Logger from '../logger.js'
-import database from '../database.js'
+import Logger from "../logger.js";
+import database from "../database.js";
 
 class MessageController {
+  static async All() {
+    const db = database.connect();
 
-  /**
-  * return {
-  *   "messsages": []
-  * }
-  */
-  static async List(socket, _, data) {
-
-    Logger.log(`SOCKET: message:list from ${socket.id}: ${data}`)
-
-    const db = database.connect()
-
-    db.all('SELECT * FROM messages', (err, rows) => {
-      if (err) {
-        Logger.log('DATABASE: Error selecting messages: ' + err.message)
-      } else {
-        Logger.log('DATABASE: Messages selected successfully');
-        socket.emit('message:list', { messages: rows});
-        Logger.log('SOCKET: message:list Messages sent');
-      }
-    })
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * FROM messages", (err, rows) => {
+        if (err) {
+          Logger.log("DATABASE: Error selecting messages: " + err.message);
+          reject(err);
+        } else {
+          Logger.log("SOCKET: message:list Messages sent");
+          resolve(rows);
+        }
+      });
+    });
   }
 
-  static Create(socket, io, data) {
+  static Create(message) {
+    const db = database.connect();
 
-    Logger.log(`SOCKET: message:create from ${socket.id}: ${data}`)
-
-    const db = database.connect()
-
-    Message.Create()
-
-    db.run('INSERT INTO messages (username, message) VALUES (?, ?)', [socket.id, data], (err) => {
-      if (err) {
-        Logger.log('DATABASE: Error inserting message: ' + err.message)
-      } else {
-        Logger.log('DATABASE: Message inserted successfully')
-        io.emit('message:create', { id: socket.id, message: data })
-        Logger.log('SOCKET: Message broadcasted')
-      }
-    })
+    return new Promise((resolve, reject) => {
+      db.run(
+        "INSERT INTO messages (sender, content) VALUES (?, ?)",
+        [message.sender, message.content],
+        function (err) {
+          // use regular function to access this.lastID
+          if (err) {
+            Logger.log("DATABASE: Error inserting message: " + err.message);
+            reject(err);
+          } else {
+            db.get(
+              "SELECT * FROM messages WHERE id = ?",
+              [this.lastID],
+              (err, row) => {
+                if (err) {
+                  Logger.log(
+                    "DATABASE: Error fetching inserted message: " + err.message
+                  );
+                  reject(err);
+                } else {
+                  Logger.log("DATABASE: Message inserted successfully");
+                  resolve(row);
+                }
+              }
+            );
+          }
+        }
+      );
+    });
   }
 }
 
-export default MessageController
+export default MessageController;
