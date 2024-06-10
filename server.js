@@ -48,6 +48,7 @@ app.get("/", (req, res) => {
 });
 
 io.on("connection", (socket) => {
+  console.log("a user connected");
   // Connection
   // ConnectionController.Connection(socket, io);
   // socket.on("disconnect", (data) =>
@@ -66,18 +67,19 @@ io.on("connection", (socket) => {
   socket.emit("welcome", serverName);
 
   socket.on("message", async (msg) => {
+    console.log(msg);
     MessageController.Create(msg)
       .then((msg) => {
-        console.log(msg);
-        // io.emit("message", msg);
+        io.emit("message", msg);
       })
       .catch((err) => {
-        console.log(err);
+        console.error(err);
       });
+  });
 
-    // await MessageController.Create(msg);
-    // console.log(msg);
-    // // io.emit('message', msg)
+  socket.on("messages", async () => {
+    const messages = await MessageController.All();
+    socket.emit("messages", messages);
   });
 });
 
