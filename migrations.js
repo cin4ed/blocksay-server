@@ -17,7 +17,7 @@ class Migrations {
         migrations.forEach((migration) => {
             db.run(migration, (err) => {
                 if (err) {
-                    Logger.log('DATABASE: Error creating table: ' + err.message)
+                      Logger.log('DATABASE: Error creating table: ' + err.message)
                 } else {
                     Logger.log('DATABASE: Table created successfully.')
                 }
